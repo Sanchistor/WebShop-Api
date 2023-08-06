@@ -4,11 +4,12 @@ using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using ss_clone.Data;
 using System.Text;
-using WebShop.WebShop.Core.Auth;
 using MediatR;
 using System.Reflection;
 using WebShop.WebShop.Core.IRepositories;
 using WebShop.WebShop.Core.Repositories;
+using WebShop.WebShop.Core.Services.Authentication;
+using WebShop.WebShop.Core.Services.Password.Service;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -47,6 +48,9 @@ builder.Services.AddDbContext<ApiDbContext>(
     );
 builder.Services.AddMediatR(typeof(Program));
 builder.Services.AddScoped<IProductsRepository, ProductRepository>();
+builder.Services.AddScoped<IAuthRepository, AuthRepository>();
+builder.Services.AddScoped<ICategoryRepository, CategoryRepository>();
+builder.Services.AddScoped<IPasswordService, PasswordService>();
 
 var key = "Yh2k7QSu418CZg5p6X3Pna9L0Miy4D3Bvt0JVr87Uc0j69Kqw5R2Nmf4FWs03Hdx";
 builder.Services.AddAuthentication(x =>

@@ -3,9 +3,9 @@ using WebShop.WebShop.Core.Dto.Products;
 using WebShop.WebShop.Core.Dto.Response;
 using WebShop.WebShop.Core.IRepositories;
 
-namespace WebShop.WebShop.Core.Commands
+namespace WebShop.WebShop.Core.Commands.Products
 {
-    public class FilterProductsByPriceCommand: IRequest<List<ProductResponse>>
+    public class FilterProductsByPriceCommand : IRequest<List<ProductResponse>>
     {
         public float MinPrice { get; set; }
         public float MaxPrice { get; set; }

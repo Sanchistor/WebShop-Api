@@ -2,9 +2,9 @@
 using WebShop.WebShop.Core.Dto.Response;
 using WebShop.WebShop.Core.IRepositories;
 
-namespace WebShop.WebShop.Core.Queries
+namespace WebShop.WebShop.Core.Queries.Products
 {
-    public class GetProductByIdQuery:IRequest<GetProductResponse>
+    public class GetProductByIdQuery : IRequest<GetProductResponse>
     {
         public int Id { get; set; }
     }

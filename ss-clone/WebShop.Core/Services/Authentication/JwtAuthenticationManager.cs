@@ -6,7 +6,7 @@ using System.Text;
 using System.Text.RegularExpressions;
 using WebShop.WebShop.Data.Models;
 
-namespace WebShop.WebShop.Core.Auth
+namespace WebShop.WebShop.Core.Services.Authentication
 {
     public class JwtAuthenticationManager
     {

@@ -1,7 +1,9 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using MediatR;
+using Microsoft.EntityFrameworkCore;
 using ss_clone.Data;
 using WebShop.WebShop.Core.Dto.Products;
 using WebShop.WebShop.Core.Dto.Response;
+using WebShop.WebShop.Core.Dto.Sort;
 using WebShop.WebShop.Core.IRepositories;
 using WebShop.WebShop.Data.Models;
 
@@ -13,6 +15,18 @@ namespace WebShop.WebShop.Core.Repositories
         public ProductRepository(ApiDbContext context)
         {
             _context = context;
+        }
+
+        public async Task<Unit> Delete(int id)
+        {
+            var product = await _context.Products.FindAsync(id);
+
+            if (product != null)
+            {
+                _context.Products.Remove(product);
+                await _context.SaveChangesAsync();
+            }
+            return Unit.Value;
         }
 
         public async Task<GetProductResponse> getProductById(int id)
@@ -150,6 +164,41 @@ namespace WebShop.WebShop.Core.Repositories
             _context.Products.Add(product);
             await _context.SaveChangesAsync();
             return product;
+        }
+
+        public async Task<Product> Put(int id, UpdateProductDto updateProductDto)
+        {
+            var product = await _context.Products.FirstOrDefaultAsync(p => p.Id == id);
+            product.Year = updateProductDto.Year;
+            product.Photo = updateProductDto.Photo;
+            product.Price = updateProductDto.Price;
+            product.ShortBio = updateProductDto.ShortBio;
+            product.Description = updateProductDto.Description;
+            product.Updated = DateTime.UtcNow;
+            await _context.SaveChangesAsync();
+            return product;
+        }
+
+        public async Task<List<ProductResponse>> SortByPhraseInDescription(SortByPhraseDto sortByPhraseDto)
+        {
+            var keyPhraseLowerCase = sortByPhraseDto.KeyPhrase.ToLower();
+            var productsSorted = await _context.Products
+                .Where(p => p.Description.ToLower().Contains(keyPhraseLowerCase))
+                .OrderByDescending(p => p.Created)
+                .Select(c => new ProductResponse
+                {
+                    Id = c.Id,
+                    Year = c.Year,
+                    ShortBio = c.ShortBio,
+                    Description = c.Description,
+                    Photo = c.Photo,
+                    Price = c.Price,
+                    Created = c.Created,
+                    Updated = c.Updated,
+                    Profile = c.Profile
+                })
+                .ToListAsync();
+            return productsSorted;
         }
     }
 }

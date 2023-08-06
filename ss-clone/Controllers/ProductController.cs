@@ -2,11 +2,11 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using ss_clone.Data;
-using WebShop.WebShop.Core.Commands;
+using WebShop.WebShop.Core.Commands.Products;
 using WebShop.WebShop.Core.Dto.Products;
 using WebShop.WebShop.Core.Dto.Response;
 using WebShop.WebShop.Core.Dto.Sort;
-using WebShop.WebShop.Core.Queries;
+using WebShop.WebShop.Core.Queries.Products;
 using WebShop.WebShop.Data.Models;
 
 namespace ss_clone.Controllers
@@ -15,11 +15,9 @@ namespace ss_clone.Controllers
     [ApiController]
     public class ProductController : ControllerBase
     {
-        private readonly ApiDbContext _context;
         private readonly IMediator _mediator;
-        public ProductController(ApiDbContext context, IMediator mediator)
+        public ProductController(IMediator mediator)
         {
-            _context = context;
             _mediator = mediator;
         }
 
@@ -73,28 +71,13 @@ namespace ss_clone.Controllers
         [HttpPost("SortByPhraseInDescription")]
         public async Task<ActionResult<ProductResponse>> SortByPhraseInDescription(SortByPhraseDto sortByPhraseDto)
         {
-            var keyPhraseLowerCase = sortByPhraseDto.KeyPhrase.ToLower();
-            var productsSorted = await _context.Products
-                .Where(p => p.Description.ToLower().Contains(keyPhraseLowerCase))
-                .OrderByDescending(p => p.Created)
-                .Select(c => new ProductResponse
-                {
-                    Id = c.Id,
-                    Year = c.Year,
-                    ShortBio = c.ShortBio,
-                    Description = c.Description,
-                    Photo = c.Photo,
-                    Price = c.Price,
-                    Created = c.Created,
-                    Updated = c.Updated,
-                    Profile = c.Profile
-                })
-                .ToListAsync();
-            if (productsSorted.Count == 0)
+            var command = new SortByPhraseInDescriptionCommand { sortByPhraseDto = sortByPhraseDto };
+            var res = await _mediator.Send(command);
+            if (res.Count == 0)
             {
                 return NotFound("This Product does not exist!");
             }
-            return Ok(productsSorted);
+            return Ok(res);
         }
 
         [HttpPost]
@@ -107,30 +90,14 @@ namespace ss_clone.Controllers
         [HttpPut("{id}")]
         public async Task<ActionResult<Product>> Put(int id, UpdateProductDto updateProductDto)
         {
-            var product = await _context.Products.FirstOrDefaultAsync(p => p.Id == id);
-            if (product == null) {
-                return BadRequest("Invalid ProductId. Product not found!");
-            }
-            product.Year = updateProductDto.Year;
-            product.Photo = updateProductDto.Photo;
-            product.Price = updateProductDto.Price;
-            product.ShortBio = updateProductDto.ShortBio;
-            product.Description = updateProductDto.Description;
-            product.Updated = DateTime.UtcNow;
-            await _context.SaveChangesAsync();
-            return CreatedAtAction(nameof(Get), new { id = product.Id }, product);
+            var command = new UpdateProductCommand { Id = id, updateProductDto = updateProductDto };
+            return await _mediator.Send(command);
         }
 
         [HttpDelete("{id}")]
-        public async Task<ActionResult<Product>> Delete(int id)
+        public async Task<IActionResult> Delete(int id)
         {
-            var product = await _context.Products.FindAsync(id);
-            if (product == null)
-            {
-                return NotFound("Product not found!s");
-            }
-            _context.Products.Remove(product);
-            await _context.SaveChangesAsync();
+            await _mediator.Send(new DeleteProductQuery { Id = id });
             return Ok("Product deleted successfully");
         }
     }

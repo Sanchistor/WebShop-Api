@@ -4,11 +4,14 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using BCrypt.Net;
 using ss_clone.Data;
-using WebShop.WebShop.Core.Auth;
 using WebShop.WebShop.Core.Dto.Login;
 using WebShop.WebShop.Core.Dto.Response;
 using WebShop.WebShop.Data.Models;
 using WebShop.WebShop.Core.Dto.UsersProfile;
+using MediatR;
+using WebShop.WebShop.Core.Commands.Authorization;
+using WebShop.WebShop.Core.Services.Authentication;
+using WebShop.WebShop.Core.Services.Password.Service;
 
 namespace WebShop.Controllers
 {
@@ -18,43 +21,21 @@ namespace WebShop.Controllers
     {
         private readonly JwtAuthenticationManager jwtAuthenticationManager;
         private readonly ApiDbContext _context;
-        public LoginController(JwtAuthenticationManager jwtAuthenticationManager, ApiDbContext context)
+        private readonly IMediator _mediator;
+        private readonly IPasswordService _passwordService;
+        public LoginController(JwtAuthenticationManager jwtAuthenticationManager, ApiDbContext context, IMediator mediator, IPasswordService passwordService)
         {
             this.jwtAuthenticationManager = jwtAuthenticationManager;
             _context = context;
+            _mediator = mediator;
+            _passwordService = passwordService;
         }
 
         [HttpPost("Register")]
-        public IActionResult CreateUserAndProfile(CreateProfileDto createProfileDto)
+        public async Task<IActionResult> CreateUserAndProfile(CreateProfileDto createProfileDto)
         {
-            var user = new User
-            {
-                FirstName = createProfileDto.FirstName,
-                LastName = createProfileDto.LastName,
-                Email = createProfileDto.Email,
-                Phone = createProfileDto.Phone,
-                Created = DateTime.UtcNow,
-                Updated = DateTime.UtcNow
-            };
-
-            // Hash the user's password before saving it
-            string hashedPassword = HashPassword(createProfileDto.Password);
-            user.Password = hashedPassword;
-
-            var profile = new Profile
-            {
-                NickName = createProfileDto.NickName,
-                Created = DateTime.UtcNow
-            };
-
-            // Establish the one-to-one relationship
-            user.Profile = profile;
-            profile.User = user;
-
-            _context.Users.Add(user);
-            _context.Profiles.Add(profile);
-            _context.SaveChanges();
-
+            var command = new CreateUserAndProfileCommand { createProfileDto = createProfileDto };
+            await _mediator.Send(command);
             return Ok("User and Profile created successfully!");
         }
 
@@ -72,7 +53,7 @@ namespace WebShop.Controllers
             }
 
             // Verify if the provided password matches the user's hashed password
-            if (!VerifyPassword(userLoginDto.password, user.Password))
+            if (!_passwordService.VerifyPassword(userLoginDto.password, user.Password))
             {
                 return Unauthorized(new { message = "Invalid password" });
             }
@@ -83,18 +64,6 @@ namespace WebShop.Controllers
             string token = jwtAuthenticationManager.Authenticate(user.Email, userLoginDto.password);
 
             return Ok(new { Token = token, Message = "Authentication successful!" });
-        }
-
-        // Helper method to hash the password
-        private string HashPassword(string password)
-        {
-            return BCrypt.Net.BCrypt.HashPassword(password);
-        }
-
-        // Helper method to verify the password against the hashed version
-        private bool VerifyPassword(string password, string hashedPassword)
-        {
-            return BCrypt.Net.BCrypt.Verify(password, hashedPassword);
         }
     }
 }

@@ -1,4 +1,4 @@
-﻿namespace WebShop.WebShop.Core.Auth
+﻿namespace WebShop.WebShop.Core.Services.Authentication
 {
     public interface IJwtAuthenticationManager
     {
